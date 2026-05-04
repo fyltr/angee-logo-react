@@ -1,5 +1,16 @@
 {
-  "_comment": "Set the project ID with `firebase use --add` after cloning, then `firebase target:apply hosting angee-logo <site-id>`. The site-id should resolve to logo.angee.ai once the custom domain is added in Firebase console.",
-  "projects": {},
-  "targets": {}
+  "projects": {
+    "angee-logo": "fyltr-ai"
+  },
+  "targets": {
+    "fyltr-ai": {
+      "hosting": {
+        "angee-logo": [
+          "angee-logo"
+        ]
+      }
+    }
+  },
+  "etags": {},
+  "_comment": "Set the project ID with `firebase use --add` after cloning, then `firebase target:apply hosting angee-logo <site-id>`. The site-id should resolve to logo.angee.ai once the custom domain is added in Firebase console."
 }

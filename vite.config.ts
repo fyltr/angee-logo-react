@@ -12,7 +12,7 @@ export default defineConfig(({ mode }): UserConfig => {
       plugins: [
         react(),
         dts({
-          include: ['src/lib', 'src/components', 'src/index.ts'],
+          include: ['src/lib', 'src/components', 'src/index.ts', 'src/vite-env.d.ts'],
           tsconfigPath: 'tsconfig.lib.json',
           rollupTypes: true,
         }),

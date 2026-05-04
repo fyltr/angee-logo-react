@@ -49,6 +49,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "deploy": "npm run build && firebase deploy --only hosting",
+    "gen:assets": "npm run build:lib && node scripts/generate-assets.mjs",
     "prepare": "node -e \"if (!require('fs').existsSync('dist-lib')) { require('child_process').execSync('npm run build:lib', { stdio: 'inherit' }); }\""
   },
   "peerDependencies": {
@@ -56,6 +57,7 @@
     "react-dom": ">=18"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^25.6.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

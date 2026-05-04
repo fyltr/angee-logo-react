@@ -1,0 +1,69 @@
+{
+  "name": "@angee/logo-react",
+  "version": "0.1.0",
+  "description": "Angee logo: configurable static SVG + animated CSS-3D React component, plus a live configurator.",
+  "license": "MIT",
+  "author": "Angee / Fyltr",
+  "homepage": "https://logo.angee.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fyltr/angee-logo-react.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fyltr/angee-logo-react/issues"
+  },
+  "keywords": [
+    "angee",
+    "logo",
+    "svg",
+    "react",
+    "isometric",
+    "cube",
+    "brand"
+  ],
+  "type": "module",
+  "files": [
+    "dist-lib",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist-lib/index.cjs",
+  "module": "./dist-lib/index.js",
+  "types": "./dist-lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist-lib/index.d.ts",
+      "import": "./dist-lib/index.js",
+      "require": "./dist-lib/index.cjs"
+    },
+    "./style.css": "./dist-lib/style.css"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "build:lib": "vite build --mode lib",
+    "build:all": "npm run build:lib && npm run build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "prepare": "node -e \"if (!require('fs').existsSync('dist-lib')) { require('child_process').execSync('npm run build:lib', { stdio: 'inherit' }); }\""
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7",
+    "vite-plugin-dts": "^4.4.0"
+  }
+}

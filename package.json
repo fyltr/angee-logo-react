@@ -1,6 +1,6 @@
 {
   "name": "@angee/logo-react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Angee logo: configurable static SVG + animated CSS-3D React component, plus a live configurator.",
   "license": "MIT",
   "author": "Angee / Fyltr",

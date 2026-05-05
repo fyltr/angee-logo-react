@@ -1,5 +1,40 @@
 /* All selectors prefixed `angee-` to avoid colliding with consumer styles. */
 
+/* Typed CSS custom properties so left/right colors can interpolate
+   smoothly when `animateColors` drives them via JS. Without
+   `@property` typing the browser treats them as opaque strings and
+   color transitions snap rather than ease. */
+@property --left-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0033ff;
+}
+@property --left-color-dark {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #000a33;
+}
+@property --left-shadow {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(0, 51, 255, 0.4);
+}
+@property --right-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ff2200;
+}
+@property --right-color-dark {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #330700;
+}
+@property --right-shadow {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(255, 34, 0, 0.4);
+}
+
 .angee-scene {
   width: 100%;
   height: 100%;
@@ -7,8 +42,6 @@
   justify-content: center;
   align-items: center;
   perspective: 2000px;
-  overflow: hidden;
-  background-color: #000;
 }
 
 .angee-shape-container {
@@ -54,6 +87,34 @@
 @keyframes angeeRotateShape {
   0%   { transform: rotateX(var(--rot-x)) rotateY(var(--rot-y)); }
   100% { transform: rotateX(calc(var(--rot-x) + 360deg)) rotateY(calc(var(--rot-y) + 360deg)); }
+}
+
+/* Wander: translates the whole scene through a 7-waypoint path that
+   spans the viewport in vw/vh units. The waypoints are deliberately
+   non-symmetric so the loop reads as drift rather than orbiting. The
+   consumer is expected to position the cube wrapper at top-0 left-0
+   (e.g. as an absolute backdrop layer) for the path to span the page. */
+.angee-scene.angee-anim-wander {
+  animation: angeeCubeWander var(--wander-duration) infinite ease-in-out;
+  will-change: transform;
+}
+
+@keyframes angeeCubeWander {
+  0%   { transform: translate(8vw, 65vh); }
+  14%  { transform: translate(40vw, 18vh); }
+  28%  { transform: translate(78vw, 55vh); }
+  42%  { transform: translate(28vw, 75vh); }
+  56%  { transform: translate(72vw, 22vh); }
+  70%  { transform: translate(12vw, 38vh); }
+  84%  { transform: translate(58vw, 70vh); }
+  100% { transform: translate(8vw, 65vh); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .angee-scene.angee-anim-wander {
+    animation: none;
+    transform: translate(45vw, 40vh);
+  }
 }
 
 .angee-cube {

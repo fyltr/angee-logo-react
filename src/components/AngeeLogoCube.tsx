@@ -1,8 +1,18 @@
-// Animated CSS-3D cube logo. Pure CSS keyframes for the rotation, no
-// per-frame JS. Heritage: ported from the original DjangoFlow webflow
-// component, with opaque-face fix (no more cubes bleeding through each other).
+// Animated CSS-3D cube logo. Pure CSS keyframes drive the rotation,
+// slide and wander; the optional color-drift effect is the only piece
+// that needs JS (a continuous hue rotation through HSL space, applied
+// to the CSS custom properties for the left/right faces).
+//
+// Three independent animations compose:
+//   - rotate / slide   (from `animationType`, on the shape container)
+//   - color drift      (opt-in via `animateColors`, on the scene)
+//   - viewport wander  (opt-in via `wander`, on the scene)
+//
+// Heritage: ported from the original DjangoFlow webflow component, with
+// opaque-face fix (no more cubes bleeding through each other) plus the
+// color-drift + wander upgrades originally landed in angee-nextjs.
 
-import { type FC, type CSSProperties } from 'react';
+import { type FC, type CSSProperties, useEffect, useRef } from 'react';
 import './AngeeLogoCube.css';
 
 export interface AngeeLogoCubeProps {
@@ -18,9 +28,30 @@ export interface AngeeLogoCubeProps {
   baseDark?: string;
   /** Seconds per full rotation. Default 20. */
   animationSpeed?: number;
-  /** What animation to play. */
+  /** Which static animation to play on the cube shape. */
   animationType?: 'rotate' | 'slide' | 'rotate-slide' | 'none';
   initialRotation?: { x: number; y: number };
+  /**
+   * Continuously hue-rotate the left/right face colors. The two sides
+   * drift in opposite directions at slightly different speeds so the
+   * cube cycles through a wide palette without ever syncing up. Off by
+   * default — opt in for marketing/hero contexts.
+   */
+  animateColors?: boolean;
+  /**
+   * Degrees per second of hue drift when `animateColors` is on. Default
+   * 8 — slow enough to read as a gentle shift, not a strobe.
+   */
+  colorDriftSpeed?: number;
+  /**
+   * Translate the whole scene through a 7-waypoint path that spans the
+   * viewport (vw/vh units), looping forever. Honors
+   * `prefers-reduced-motion` (parks at the path's midpoint). Off by
+   * default — opt in for page-level decorative backdrops.
+   */
+  wander?: boolean;
+  /** Seconds per full wander loop. Default 90. */
+  wanderSpeed?: number;
   className?: string;
   style?: CSSProperties;
 }
@@ -38,6 +69,14 @@ const SHAPE_2: readonly Block[] = [
   [2, 1, 0], [2, 2, 0],
   [2, 0, 1], [2, 0, 2],
 ];
+
+/** `#abc` → `#aabbcc`. Leaves 6-char hex untouched. */
+function expand3(hex: string): string {
+  if (/^#[0-9a-f]{3}$/i.test(hex)) {
+    return '#' + hex.slice(1).split('').map(c => c + c).join('');
+  }
+  return hex;
+}
 
 /** Solid (non-transparent) blend of `hex` toward black. Same look as
  *  `rgba(color, factor)` over black, but opaque — prevents cubes from
@@ -58,12 +97,33 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-/** `#abc` → `#aabbcc`. Leaves 6-char hex untouched. */
-function expand3(hex: string): string {
-  if (/^#[0-9a-f]{3}$/i.test(hex)) {
-    return '#' + hex.slice(1).split('').map(c => c + c).join('');
-  }
-  return hex;
+function hslToHex(h: number, s: number, l: number): string {
+  const sN = s / 100;
+  const lN = l / 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = sN * Math.min(lN, 1 - lN);
+  const f = (n: number) => {
+    const c = lN - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+    return Math.round(255 * c).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function hexToHue(hex: string): number {
+  const h = expand3(hex);
+  const r = (parseInt(h.slice(1, 3), 16) || 0) / 255;
+  const g = (parseInt(h.slice(3, 5), 16) || 0) / 255;
+  const b = (parseInt(h.slice(5, 7), 16) || 0) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  if (d === 0) return 0;
+  let hue: number;
+  if (max === r) hue = ((g - b) / d) % 6;
+  else if (max === g) hue = (b - r) / d + 2;
+  else hue = (r - g) / d + 4;
+  hue *= 60;
+  return (hue + 360) % 360;
 }
 
 export const AngeeLogoCube: FC<AngeeLogoCubeProps> = ({
@@ -75,9 +135,49 @@ export const AngeeLogoCube: FC<AngeeLogoCubeProps> = ({
   animationSpeed = 20,
   animationType = 'rotate',
   initialRotation = { x: -35.264, y: -45 },
+  animateColors = false,
+  colorDriftSpeed = 8,
+  wander = false,
+  wanderSpeed = 90,
   className,
   style,
 }) => {
+  const sceneRef = useRef<HTMLDivElement>(null);
+
+  // Color drift: opposite-direction hue rotation on left and right
+  // faces at slightly mismatched speeds so they never sync up. Driven
+  // by requestAnimationFrame; cancels on unmount or prop change.
+  useEffect(() => {
+    if (!animateColors) return;
+    const el = sceneRef.current;
+    if (!el) return;
+
+    let leftHue = hexToHue(leftColor);
+    let rightHue = hexToHue(rightColor);
+    let prev = performance.now();
+    let rafId = 0;
+
+    const apply = (hue: number, prefix: 'left' | 'right') => {
+      const color = hslToHex(hue, 88, 55);
+      el.style.setProperty(`--${prefix}-color`, color);
+      el.style.setProperty(`--${prefix}-color-dark`, mixWithBlack(color, 0.2));
+      el.style.setProperty(`--${prefix}-shadow`, hexToRgba(color, 0.4));
+    };
+
+    const tick = (now: number) => {
+      const dt = (now - prev) / 1000;
+      prev = now;
+      leftHue = (leftHue + colorDriftSpeed * dt + 360) % 360;
+      rightHue = (rightHue - colorDriftSpeed * 1.3 * dt + 360) % 360;
+      apply(leftHue, 'left');
+      apply(rightHue, 'right');
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [animateColors, colorDriftSpeed, leftColor, rightColor]);
+
   const step = size + gap;
 
   const styleVariables = {
@@ -90,6 +190,7 @@ export const AngeeLogoCube: FC<AngeeLogoCubeProps> = ({
     '--right-shadow': hexToRgba(rightColor, 0.4),
     '--base-dark': baseDark,
     '--anim-duration': `${animationSpeed}s`,
+    '--wander-duration': `${wanderSpeed}s`,
     '--rot-x': `${initialRotation.x}deg`,
     '--rot-y': `${initialRotation.y}deg`,
     '--gap': `${gap}px`,
@@ -124,8 +225,12 @@ export const AngeeLogoCube: FC<AngeeLogoCubeProps> = ({
     return c.join(' ');
   };
 
+  const sceneCls = ['angee-scene'];
+  if (wander) sceneCls.push('angee-anim-wander');
+  if (className) sceneCls.push(className);
+
   return (
-    <div className={['angee-scene', className].filter(Boolean).join(' ')} style={styleVariables}>
+    <div ref={sceneRef} className={sceneCls.join(' ')} style={styleVariables}>
       <div className={containerCls.join(' ')}>
         <div className={shapeCls(1)}>
           {SHAPE_1.map(renderCube)}

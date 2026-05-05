@@ -1,6 +1,7 @@
 import { defineConfig, type UserConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
+import { libInjectCss } from 'vite-plugin-lib-inject-css';
 import { resolve } from 'node:path';
 
 // Two build modes:
@@ -11,6 +12,11 @@ export default defineConfig(({ mode }): UserConfig => {
     return {
       plugins: [
         react(),
+        // Re-injects `import './style.css'` at the top of every chunk so
+        // consumers' bundlers automatically pick up the stylesheet without
+        // a manual import. Vite's lib mode strips the side-effect import
+        // by default; without this plugin the cube renders un-styled.
+        libInjectCss(),
         dts({
           include: ['src/lib', 'src/components', 'src/index.ts', 'src/vite-env.d.ts'],
           tsconfigPath: 'tsconfig.lib.json',

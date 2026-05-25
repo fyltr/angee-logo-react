@@ -1,0 +1,151 @@
+{
+  "name": "Angee brand kit",
+  "generated": "2026-05-25T23:16:10.262Z",
+  "homepage": "https://logo.angee.ai",
+  "presets": [
+    {
+      "key": "webflow",
+      "name": "Angee-Logo-Webflow",
+      "geometry": "full",
+      "rotation": "iso",
+      "scheme": "shade",
+      "colors": {
+        "top": "#0a0a0a",
+        "right": "#ff2200",
+        "left": "#0033ff"
+      },
+      "svg": "svg/Angee-Logo-Webflow.svg",
+      "png": [
+        "png/Angee-Logo-Webflow-1024.png",
+        "png/Angee-Logo-Webflow-512.png",
+        "png/Angee-Logo-Webflow-256.png"
+      ]
+    },
+    {
+      "key": "gold",
+      "name": "Angee-Logo-Gold",
+      "geometry": "full",
+      "rotation": "rotated",
+      "scheme": "3tone",
+      "colors": {
+        "top": "#FCD34D",
+        "right": "#E6B400",
+        "left": "#9A7D0A"
+      },
+      "svg": "svg/Angee-Logo-Gold.svg",
+      "png": [
+        "png/Angee-Logo-Gold-1024.png",
+        "png/Angee-Logo-Gold-512.png",
+        "png/Angee-Logo-Gold-256.png"
+      ]
+    },
+    {
+      "key": "goldIso",
+      "name": "Angee-Logo-Gold-Iso",
+      "geometry": "full",
+      "rotation": "iso",
+      "scheme": "3tone",
+      "colors": {
+        "top": "#FCD34D",
+        "right": "#E6B400",
+        "left": "#9A7D0A"
+      },
+      "svg": "svg/Angee-Logo-Gold-Iso.svg",
+      "png": [
+        "png/Angee-Logo-Gold-Iso-1024.png",
+        "png/Angee-Logo-Gold-Iso-512.png",
+        "png/Angee-Logo-Gold-Iso-256.png"
+      ]
+    },
+    {
+      "key": "mono",
+      "name": "Angee-Logo-Mono",
+      "geometry": "full",
+      "rotation": "rotated",
+      "scheme": "mono",
+      "colors": {
+        "top": "#E6B400",
+        "right": "#E6B400",
+        "left": "#E6B400"
+      },
+      "svg": "svg/Angee-Logo-Mono.svg",
+      "png": [
+        "png/Angee-Logo-Mono-1024.png",
+        "png/Angee-Logo-Mono-512.png",
+        "png/Angee-Logo-Mono-256.png"
+      ]
+    },
+    {
+      "key": "shade",
+      "name": "Angee-Logo-Shade",
+      "geometry": "full",
+      "rotation": "rotated",
+      "scheme": "shade",
+      "colors": {
+        "top": "#FCD34D",
+        "right": "#E6B400",
+        "left": "#9A7D0A"
+      },
+      "svg": "svg/Angee-Logo-Shade.svg",
+      "png": [
+        "png/Angee-Logo-Shade-1024.png",
+        "png/Angee-Logo-Shade-512.png",
+        "png/Angee-Logo-Shade-256.png"
+      ]
+    },
+    {
+      "key": "star",
+      "name": "Angee-Logo-Star",
+      "geometry": "full",
+      "rotation": "star",
+      "scheme": "3tone",
+      "colors": {
+        "top": "#E6B400",
+        "right": "#FCD34D",
+        "left": "#9A7D0A"
+      },
+      "svg": "svg/Angee-Logo-Star.svg",
+      "png": [
+        "png/Angee-Logo-Star-1024.png",
+        "png/Angee-Logo-Star-512.png",
+        "png/Angee-Logo-Star-256.png"
+      ]
+    },
+    {
+      "key": "corner",
+      "name": "Angee-Logo-Corner",
+      "geometry": "tripod1",
+      "rotation": "iso",
+      "scheme": "3tone",
+      "colors": {
+        "top": "#FCD34D",
+        "right": "#E6B400",
+        "left": "#9A7D0A"
+      },
+      "svg": "svg/Angee-Logo-Corner.svg",
+      "png": [
+        "png/Angee-Logo-Corner-1024.png",
+        "png/Angee-Logo-Corner-512.png",
+        "png/Angee-Logo-Corner-256.png"
+      ]
+    }
+  ],
+  "favicon": {
+    "svg": "favicon/favicon.svg",
+    "ico": "favicon/favicon.ico",
+    "png": [
+      "favicon/favicon-16.png",
+      "favicon/favicon-32.png",
+      "favicon/favicon-48.png",
+      "favicon/favicon-180.png",
+      "favicon/favicon-512.png"
+    ],
+    "appleTouchIcon": "favicon/apple-touch-icon.png"
+  },
+  "og": {
+    "svg": "og.svg",
+    "png": "og.png",
+    "width": 1200,
+    "height": 630
+  }
+}

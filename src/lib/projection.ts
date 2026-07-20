@@ -11,21 +11,35 @@ export interface ProjectedPoint {
 
 const D2R = Math.PI / 180;
 
-/** Project a 3D world-space point onto the screen for the given rotation. */
-export function project(x: number, y: number, z: number, rotY: number, rotX: number): ProjectedPoint {
+export type Rotation = (point: Vec3) => Vec3;
+export type Projector = (x: number, y: number, z: number) => ProjectedPoint;
+
+/** Precompute a CSS-equivalent rotation for repeated point transforms. */
+export function createRotation(rotY: number, rotX: number): Rotation {
   const ry = rotY * D2R;
   const rx = rotX * D2R;
   const cy = Math.cos(ry), sy = Math.sin(ry);
   const cx = Math.cos(rx), sx = Math.sin(rx);
-  // rotateY:
-  const x1 = cy * x + sy * z;
-  const y1 = y;
-  const z1 = -sy * x + cy * z;
-  // rotateX:
-  const x2 = x1;
-  const y2 = cx * y1 - sx * z1;
-  const z2 = sx * y1 + cx * z1;
-  return { sx: x2, sy: y2, depth: z2 };
+
+  return ([x, y, z]) => {
+    const x1 = cy * x + sy * z;
+    const z1 = -sy * x + cy * z;
+    return [x1, cx * y - sx * z1, sx * y + cx * z1];
+  };
+}
+
+/** Precompute a projector when many points share the same camera rotation. */
+export function createProjector(rotY: number, rotX: number): Projector {
+  const rotate = createRotation(rotY, rotX);
+  return (x, y, z) => {
+    const [sx, sy, depth] = rotate([x, y, z]);
+    return { sx, sy, depth };
+  };
+}
+
+/** Project a 3D world-space point onto the screen for the given rotation. */
+export function project(x: number, y: number, z: number, rotY: number, rotX: number): ProjectedPoint {
+  return createProjector(rotY, rotX)(x, y, z);
 }
 
 /**

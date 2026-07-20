@@ -19,6 +19,9 @@ export const SHAPE2: readonly GridPos[] = [
   [2, 0, 1], [2, 0, 2],             // Z-arm (front)
 ];
 
+/** Complete 14-cube Angee mark. Shared by all static and animated renderers. */
+export const LOGO_CUBES: readonly GridPos[] = [...SHAPE1, ...SHAPE2];
+
 export type FaceName = 'top' | 'bottom' | 'left' | 'right' | 'front' | 'back';
 export type Vec3 = readonly [number, number, number];
 
@@ -46,7 +49,7 @@ export function getCubes(geometry: Geometry): readonly GridPos[] {
     case 'tripod2': return SHAPE2;
     case 'cube':    return [[0, 0, 0]];
     case 'full':
-    default:        return [...SHAPE1, ...SHAPE2];
+    default:        return LOGO_CUBES;
   }
 }
 

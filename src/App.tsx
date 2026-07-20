@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { AngeeLogo, AngeeLogoCube } from './components/index.js';
+import {
+  AngeeLogo,
+  AngeeLogoCube,
+  AngeeLogoFractal,
+  type AngeeLogoFractalStart,
+} from './components/index.js';
 import {
   buildSvg,
   PRESETS,
@@ -15,7 +20,16 @@ import type { Geometry } from './lib/geometry.js';
 
 type PresetSelection = PresetKey | 'custom';
 type RotationSelection = RotationKey | 'custom';
-type Tab = 'static' | 'animated';
+type Tab = 'static' | 'animated' | 'fractal';
+
+const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
+  { id: 'static', label: 'Static SVG' },
+  { id: 'animated', label: 'Classic cube' },
+  { id: 'fractal', label: 'Fractal dissolve' },
+];
+
+const DEFAULT_PRESET = PRESETS.gold;
+const DEFAULT_ROTATION = ROTATIONS[DEFAULT_PRESET.rotation];
 
 interface State {
   preset: PresetSelection;
@@ -36,19 +50,19 @@ interface State {
 
 const INITIAL: State = {
   preset: 'gold',
-  geometry: 'full',
-  rotation: 'rotated',
-  rotY: ROTATIONS.rotated.rotY,
-  rotX: ROTATIONS.rotated.rotX,
-  scheme: '3tone',
-  colors: { top: '#FCD34D', right: '#E6B400', left: '#9A7D0A' },
+  geometry: DEFAULT_PRESET.geometry,
+  rotation: DEFAULT_PRESET.rotation,
+  rotY: DEFAULT_ROTATION.rotY,
+  rotX: DEFAULT_ROTATION.rotX,
+  scheme: DEFAULT_PRESET.scheme,
+  colors: DEFAULT_PRESET.colors,
   bgMode: 'color',
-  bgColor: '#0A0A0F',
-  stroke: '#0A0A0F',
-  strokeWidth: 0,
+  bgColor: DEFAULT_PRESET.bgColor,
+  stroke: DEFAULT_PRESET.stroke,
+  strokeWidth: DEFAULT_PRESET.strokeWidth,
   size: 100,
   pad: 40,
-  filename: 'Angee-Logo-Gold',
+  filename: DEFAULT_PRESET.filename,
 };
 
 function applyPreset(s: State, key: PresetKey): State {
@@ -80,6 +94,7 @@ function detectRotation(rotY: number, rotX: number): RotationSelection {
 export default function App() {
   const [s, setS] = useState<State>(INITIAL);
   const [tab, setTab] = useState<Tab>('static');
+  const [fractalStart, setFractalStart] = useState<AngeeLogoFractalStart>('cube');
   const [toast, setToast] = useState<string>('');
 
   // The render is fast (pure geometry → SVG); skip useMemo, React handles 60fps.
@@ -274,12 +289,38 @@ export default function App() {
           <label htmlFor="ctl-pad">Padding <span className="v">{s.pad}</span></label>
           <input id="ctl-pad" type="range" min={0} max={200} step={2} value={s.pad} onChange={e => patch('pad', parseFloat(e.target.value))} />
         </div>
+
+        {tab === 'fractal' && (
+          <>
+            <h2>Fractal animation</h2>
+            <div className="group">
+              <label htmlFor="ctl-fractal-start">Start from</label>
+              <select
+                id="ctl-fractal-start"
+                value={fractalStart}
+                onChange={event => setFractalStart(event.target.value as AngeeLogoFractalStart)}
+              >
+                <option value="cube">Assembled cube</option>
+                <option value="dust">Dispersed dust</option>
+              </select>
+            </div>
+          </>
+        )}
       </aside>
 
       <main className="preview">
         <div className="tab-bar" role="tablist">
-          <button role="tab" aria-selected={tab === 'static'} className={`tab ${tab === 'static' ? 'active' : ''}`} onClick={() => setTab('static')}>Static SVG</button>
-          <button role="tab" aria-selected={tab === 'animated'} className={`tab ${tab === 'animated' ? 'active' : ''}`} onClick={() => setTab('animated')}>Animated &lt;AngeeLogoCube /&gt;</button>
+          {TABS.map(item => (
+            <button
+              key={item.id}
+              role="tab"
+              aria-selected={tab === item.id}
+              className={`tab ${tab === item.id ? 'active' : ''}`}
+              onClick={() => setTab(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
 
         {tab === 'static' ? (
@@ -300,12 +341,22 @@ export default function App() {
               aria-label="Angee logo preview"
             />
           </div>
-        ) : (
+        ) : tab === 'animated' ? (
           <div className="animated-stage">
             <AngeeLogoCube
               size={Math.max(40, s.size * 0.6)}
               leftColor={s.colors.left}
               rightColor={s.colors.right}
+            />
+          </div>
+        ) : (
+          <div className="animated-stage">
+            <AngeeLogoFractal
+              size={Math.max(40, s.size * 0.72)}
+              topColor={s.colors.top}
+              leftColor={s.colors.left}
+              rightColor={s.colors.right}
+              startFrom={fractalStart}
             />
           </div>
         )}

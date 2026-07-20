@@ -2,12 +2,13 @@
 
 Angee logo as configurable React components, plus a live configurator at **[logo.angee.ai](https://logo.angee.ai)**.
 
-Two components:
+Three components:
 
 - **`<AngeeLogo />`** — pure static SVG. Configurable rotation, color scheme, geometry, palette. Use anywhere a logo goes.
 - **`<AngeeLogoCube />`** — animated CSS-3D version. The 14 sub-cubes rotate / slide apart in real time. Drop-in replacement for a static logo when you want motion.
+- **`<AngeeLogoFractal />`** — canvas-rendered recursive animation. The blocks become miniature Angee logos, dissolve into thousands of dust-scale cubes, and reassemble.
 
-The configurator app exposes every prop both components accept and lets you download the rendered SVG.
+The configurator app previews all three renderers and lets you download the static SVG.
 
 ---
 
@@ -70,6 +71,25 @@ import '@angee/logo-react/style.css';
 ```
 
 All CSS class names are prefixed `angee-` so they don't collide with consumer styles.
+
+### Fractal cube animation
+
+```tsx
+import { AngeeLogoFractal } from '@angee/logo-react';
+
+<div style={{ width: 720, height: 720, background: '#000' }}>
+  <AngeeLogoFractal
+    size={72}
+    animationSpeed={20}   // seconds for break-apart + reassembly
+    startFrom="dust"      // 'cube' | 'dust'
+    topColor="#FCD34D"
+    rightColor="#E6B400"
+    leftColor="#9A7D0A"
+  />
+</div>
+```
+
+The renderer caps its pixel ratio, pauses drawing when offscreen, and shows the assembled logo when `prefers-reduced-motion` is enabled.
 
 ### Headless: just the SVG string
 
@@ -152,6 +172,7 @@ The custom domain `logo.angee.ai` is mapped in Firebase console → Hosting → 
 ```
 src/
 ├── lib/
+│   ├── color.ts        # shared color parsing, shading, and conversion
 │   ├── geometry.ts     # cube positions, face definitions
 │   ├── projection.ts   # CSS-equivalent rotateY / rotateX projection
 │   ├── render.ts       # painter's-order polygon assembly + buildSvg()
@@ -159,7 +180,10 @@ src/
 ├── components/
 │   ├── AngeeLogo.tsx        # static SVG component
 │   ├── AngeeLogoCube.tsx    # animated CSS-3D component
-│   └── AngeeLogoCube.css    # all classes prefixed `angee-`
+│   ├── AngeeLogoCube.css    # all classes prefixed `angee-`
+│   ├── AngeeLogoFractal.tsx # recursive canvas animation component
+│   ├── AngeeLogoFractal.css
+│   └── fractalRenderer.ts   # framework-free animation and drawing engine
 ├── App.tsx             # configurator UI
 ├── main.tsx            # demo entry
 └── index.ts            # library entry

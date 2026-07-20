@@ -2,7 +2,8 @@
 // a structured polygon list (used by the React component for direct rendering).
 
 import { FACES, type FaceName, faceBucket, getCubes, type Geometry } from './geometry.js';
-import { project, viewDirection } from './projection.js';
+import { shadeHex } from './color.js';
+import { createProjector, viewDirection } from './projection.js';
 
 export type Scheme = '3tone' | 'mono' | 'shade';
 
@@ -42,6 +43,15 @@ export interface RenderedScene {
   readonly viewBox: { x: number; y: number; w: number; h: number };
 }
 
+export interface GradientSpec {
+  readonly id: string;
+  readonly x1: string;
+  readonly y1: string;
+  readonly x2: string;
+  readonly y2: string;
+  readonly stops: readonly { readonly offset: string; readonly color: string }[];
+}
+
 const round = (n: number) => Math.round(n * 100) / 100;
 
 function defaultIdPrefix(colors: Colors): string {
@@ -65,6 +75,7 @@ export function renderScene(opts: RenderOptions): RenderedScene {
   const { geometry, rotY, rotX, size, pad } = opts;
   const cubes = getCubes(geometry);
   const view = viewDirection(rotY, rotX);
+  const project = createProjector(rotY, rotX);
 
   // Painter's order — back-to-front by depth of cube center along view dir.
   const items = cubes.map(([cx, cy, cz]) => {
@@ -84,7 +95,7 @@ export function renderScene(opts: RenderOptions): RenderedScene {
         const wx = (cx + dx) * size;
         const wy = (cy + dy) * size;
         const wz = (cz + dz) * size;
-        const p = project(wx, wy, wz, rotY, rotX);
+        const p = project(wx, wy, wz);
         return [p.sx, p.sy] as const;
       });
       polys.push({ face: face.name, points, fill: faceFill(face.name, opts) });
@@ -107,38 +118,46 @@ export function renderScene(opts: RenderOptions): RenderedScene {
   };
 }
 
-/** Lighten / darken a hex color by a multiplier (<1 darkens, >1 lightens). */
+/** Backward-compatible name retained for the public render API. */
 export function shadeStop(hex: string, factor: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const adj = (c: number) =>
-    factor < 1
-      ? Math.round(c * factor)
-      : Math.round(c + (255 - c) * (factor - 1));
-  return '#' + [adj(r), adj(g), adj(b)]
-    .map(c => Math.max(0, Math.min(255, c)).toString(16).padStart(2, '0'))
-    .join('');
+  return shadeHex(hex, factor);
+}
+
+/** One canonical set of gradients for both string and React SVG renderers. */
+export function gradientSpecs(colors: Colors, idPrefix?: string): readonly GradientSpec[] {
+  const prefix = idPrefix ?? defaultIdPrefix(colors);
+  return [
+    {
+      id: `${prefix}-top`, x1: '0%', y1: '0%', x2: '0%', y2: '100%',
+      stops: [
+        { offset: '0%', color: shadeStop(colors.top, 0.4) },
+        { offset: '100%', color: colors.top },
+      ],
+    },
+    {
+      id: `${prefix}-right`, x1: '100%', y1: '0%', x2: '0%', y2: '100%',
+      stops: [
+        { offset: '0%', color: shadeStop(colors.right, 0.3) },
+        { offset: '55%', color: colors.right },
+        { offset: '100%', color: shadeStop(colors.right, 1.25) },
+      ],
+    },
+    {
+      id: `${prefix}-left`, x1: '0%', y1: '0%', x2: '100%', y2: '100%',
+      stops: [
+        { offset: '0%', color: shadeStop(colors.left, 0.25) },
+        { offset: '60%', color: colors.left },
+        { offset: '100%', color: shadeStop(colors.left, 1.4) },
+      ],
+    },
+  ];
 }
 
 export function gradientDefs(colors: Colors, idPrefix?: string): string {
-  const p = idPrefix ?? defaultIdPrefix(colors);
-  return `<defs>
-    <linearGradient id="${p}-top" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="${shadeStop(colors.top, 0.4)}"/>
-      <stop offset="100%" stop-color="${colors.top}"/>
-    </linearGradient>
-    <linearGradient id="${p}-right" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="${shadeStop(colors.right, 0.3)}"/>
-      <stop offset="55%" stop-color="${colors.right}"/>
-      <stop offset="100%" stop-color="${shadeStop(colors.right, 1.25)}"/>
-    </linearGradient>
-    <linearGradient id="${p}-left" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="${shadeStop(colors.left, 0.25)}"/>
-      <stop offset="60%" stop-color="${colors.left}"/>
-      <stop offset="100%" stop-color="${shadeStop(colors.left, 1.4)}"/>
-    </linearGradient>
-  </defs>`;
+  const gradients = gradientSpecs(colors, idPrefix).map(gradient => `    <linearGradient id="${gradient.id}" x1="${gradient.x1}" y1="${gradient.y1}" x2="${gradient.x2}" y2="${gradient.y2}">
+${gradient.stops.map(stop => `      <stop offset="${stop.offset}" stop-color="${stop.color}"/>`).join('\n')}
+    </linearGradient>`).join('\n');
+  return `<defs>\n${gradients}\n  </defs>`;
 }
 
 /** Build a complete `<svg>…</svg>` markup string. */

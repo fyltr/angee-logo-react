@@ -5,12 +5,12 @@
 import { useId, type FC, type SVGProps } from 'react';
 import {
   renderScene,
-  shadeStop,
+  gradientSpecs,
   type RenderOptions,
   type Scheme,
   type Colors,
 } from '../lib/render.js';
-import { ROTATIONS, PRESETS } from '../lib/presets.js';
+import { BRAND_BACKGROUND, BRAND_COLORS, ROTATIONS, PRESETS } from '../lib/presets.js';
 import type { Geometry } from '../lib/geometry.js';
 
 export interface AngeeLogoProps extends Omit<SVGProps<SVGSVGElement>, 'viewBox'> {
@@ -30,8 +30,6 @@ export interface AngeeLogoProps extends Omit<SVGProps<SVGSVGElement>, 'viewBox'>
   stroke?: string;
   strokeWidth?: number;
 }
-
-const DEFAULT_COLORS: Colors = { top: '#FCD34D', right: '#E6B400', left: '#9A7D0A' };
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
@@ -64,10 +62,10 @@ export const AngeeLogo: FC<AngeeLogoProps> = ({
     size,
     pad,
     scheme: scheme ?? presetCfg?.scheme ?? '3tone',
-    colors: { ...DEFAULT_COLORS, ...presetCfg?.colors, ...colors },
+    colors: { ...BRAND_COLORS, ...presetCfg?.colors, ...colors },
     bgMode: bgColor === null ? 'transparent' : 'color',
-    bgColor: bgColor ?? presetCfg?.bgColor ?? '#0A0A0F',
-    stroke: stroke ?? presetCfg?.stroke ?? '#0A0A0F',
+    bgColor: bgColor ?? presetCfg?.bgColor ?? BRAND_BACKGROUND,
+    stroke: stroke ?? presetCfg?.stroke ?? BRAND_BACKGROUND,
     strokeWidth: strokeWidth ?? presetCfg?.strokeWidth ?? 0,
     // useId() guarantees uniqueness even with identical color palettes on the
     // same page. Each <AngeeLogo /> instance owns its own gradient defs.
@@ -83,20 +81,20 @@ export const AngeeLogo: FC<AngeeLogoProps> = ({
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={vb} {...svgProps}>
       {opts.scheme === 'shade' && (
         <defs>
-          <linearGradient id={`${opts.idPrefix}-top`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={shadeStop(opts.colors.top, 0.4)} />
-            <stop offset="100%" stopColor={opts.colors.top} />
-          </linearGradient>
-          <linearGradient id={`${opts.idPrefix}-right`} x1="100%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={shadeStop(opts.colors.right, 0.3)} />
-            <stop offset="55%" stopColor={opts.colors.right} />
-            <stop offset="100%" stopColor={shadeStop(opts.colors.right, 1.25)} />
-          </linearGradient>
-          <linearGradient id={`${opts.idPrefix}-left`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={shadeStop(opts.colors.left, 0.25)} />
-            <stop offset="60%" stopColor={opts.colors.left} />
-            <stop offset="100%" stopColor={shadeStop(opts.colors.left, 1.4)} />
-          </linearGradient>
+          {gradientSpecs(opts.colors, opts.idPrefix).map(gradient => (
+            <linearGradient
+              key={gradient.id}
+              id={gradient.id}
+              x1={gradient.x1}
+              y1={gradient.y1}
+              x2={gradient.x2}
+              y2={gradient.y2}
+            >
+              {gradient.stops.map(stop => (
+                <stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
+              ))}
+            </linearGradient>
+          ))}
         </defs>
       )}
       {opts.bgMode === 'color' && (

@@ -17,55 +17,23 @@ import {
   type RotationKey,
 } from './lib/index.js';
 import type { Geometry } from './lib/geometry.js';
+import {
+  DEFAULT_SHAREABLE_STATE,
+  buildConfiguratorUrl,
+  parseConfiguratorSearch,
+  type ConfiguratorState,
+  type LogoView,
+  type PresetSelection,
+  type RotationSelection,
+} from './urlState.js';
 
-type PresetSelection = PresetKey | 'custom';
-type RotationSelection = RotationKey | 'custom';
-type Tab = 'static' | 'animated' | 'fractal';
-
-const TABS: readonly { readonly id: Tab; readonly label: string }[] = [
+const TABS: readonly { readonly id: LogoView; readonly label: string }[] = [
   { id: 'static', label: 'Static SVG' },
-  { id: 'animated', label: 'Classic cube' },
+  { id: 'cube', label: 'Classic cube' },
   { id: 'fractal', label: 'Fractal dissolve' },
 ];
 
-const DEFAULT_PRESET = PRESETS.gold;
-const DEFAULT_ROTATION = ROTATIONS[DEFAULT_PRESET.rotation];
-
-interface State {
-  preset: PresetSelection;
-  geometry: Geometry;
-  rotation: RotationSelection;
-  rotY: number;
-  rotX: number;
-  scheme: Scheme;
-  colors: Colors;
-  bgMode: 'color' | 'transparent';
-  bgColor: string;
-  stroke: string;
-  strokeWidth: number;
-  size: number;
-  pad: number;
-  filename: string;
-}
-
-const INITIAL: State = {
-  preset: 'gold',
-  geometry: DEFAULT_PRESET.geometry,
-  rotation: DEFAULT_PRESET.rotation,
-  rotY: DEFAULT_ROTATION.rotY,
-  rotX: DEFAULT_ROTATION.rotX,
-  scheme: DEFAULT_PRESET.scheme,
-  colors: DEFAULT_PRESET.colors,
-  bgMode: 'color',
-  bgColor: DEFAULT_PRESET.bgColor,
-  stroke: DEFAULT_PRESET.stroke,
-  strokeWidth: DEFAULT_PRESET.strokeWidth,
-  size: 100,
-  pad: 40,
-  filename: DEFAULT_PRESET.filename,
-};
-
-function applyPreset(s: State, key: PresetKey): State {
+function applyPreset(s: ConfiguratorState, key: PresetKey): ConfiguratorState {
   const p = PRESETS[key];
   const rot = ROTATIONS[p.rotation];
   return {
@@ -92,10 +60,15 @@ function detectRotation(rotY: number, rotX: number): RotationSelection {
 }
 
 export default function App() {
-  const [s, setS] = useState<State>(INITIAL);
-  const [tab, setTab] = useState<Tab>('static');
-  const [fractalStart, setFractalStart] = useState<AngeeLogoFractalStart>('cube');
+  const [initialUrlState] = useState(() => typeof window === 'undefined'
+    ? DEFAULT_SHAREABLE_STATE
+    : parseConfiguratorSearch(window.location.search));
+  const [s, setS] = useState<ConfiguratorState>(initialUrlState.config);
+  const [tab, setTab] = useState<LogoView>(initialUrlState.view);
+  const [fractalStart, setFractalStart] = useState<AngeeLogoFractalStart>(initialUrlState.fractalStart);
   const [toast, setToast] = useState<string>('');
+
+  const shareableState = { config: s, view: tab, fractalStart } as const;
 
   // The render is fast (pure geometry → SVG); skip useMemo, React handles 60fps.
   const renderOpts: RenderOptions = {
@@ -118,7 +91,25 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  function patch<K extends keyof State>(key: K, val: State[K]) {
+  useEffect(() => {
+    const handlePopState = () => {
+      const next = parseConfiguratorSearch(window.location.search);
+      setS(next.config);
+      setTab(next.view);
+      setFractalStart(next.fractalStart);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const nextUrl = buildConfiguratorUrl(window.location.href, shareableState);
+    if (nextUrl !== window.location.href) {
+      window.history.replaceState(window.history.state, '', nextUrl);
+    }
+  }, [fractalStart, s, tab]);
+
+  function patch<K extends keyof ConfiguratorState>(key: K, val: ConfiguratorState[K]) {
     setS(prev => ({ ...prev, [key]: val, preset: 'custom' }));
   }
   function patchColor(slot: keyof Colors, val: string) {
@@ -133,6 +124,17 @@ export default function App() {
   }
   function patchRotX(val: number) {
     setS(prev => ({ ...prev, rotX: val, rotation: detectRotation(prev.rotY, val) }));
+  }
+
+  function navigateToView(nextView: LogoView) {
+    if (nextView === tab) return;
+    const nextUrl = buildConfiguratorUrl(window.location.href, {
+      config: s,
+      view: nextView,
+      fractalStart,
+    });
+    window.history.pushState(window.history.state, '', nextUrl);
+    setTab(nextView);
   }
 
   function download() {
@@ -152,6 +154,17 @@ export default function App() {
       setToast('SVG copied');
     } catch (err) {
       console.warn('Clipboard copy failed:', err);
+      setToast('Copy failed — clipboard not available');
+    }
+  }
+
+  async function copyLink() {
+    try {
+      const url = buildConfiguratorUrl(window.location.href, shareableState);
+      await navigator.clipboard.writeText(url);
+      setToast('Share link copied');
+    } catch (err) {
+      console.warn('Share link copy failed:', err);
       setToast('Copy failed — clipboard not available');
     }
   }
@@ -316,7 +329,7 @@ export default function App() {
               role="tab"
               aria-selected={tab === item.id}
               className={`tab ${tab === item.id ? 'active' : ''}`}
-              onClick={() => setTab(item.id)}
+              onClick={() => navigateToView(item.id)}
             >
               {item.label}
             </button>
@@ -341,7 +354,7 @@ export default function App() {
               aria-label="Angee logo preview"
             />
           </div>
-        ) : tab === 'animated' ? (
+        ) : tab === 'cube' ? (
           <div className="animated-stage">
             <AngeeLogoCube
               size={Math.max(40, s.size * 0.6)}
@@ -373,6 +386,7 @@ export default function App() {
           />
           <button onClick={download}>Download SVG</button>
           <button onClick={copy} className="secondary">Copy SVG</button>
+          <button onClick={copyLink} className="secondary">Copy link</button>
         </div>
       </main>
 

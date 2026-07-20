@@ -23,6 +23,17 @@ npm run dev
 
 Opens at `http://localhost:5173`.
 
+Configurator state is encoded in the query string, so links can open a
+specific static logo or animation directly. For example:
+
+```text
+https://angee-logo.web.app/?view=fractal&start=dust&preset=webflow
+```
+
+Tab changes create browser-history entries, while color and layout edits keep
+the current entry updated. Use **Copy link** in the configurator to copy the
+current canonical URL.
+
 ## Use the components in another React project
 
 ```bash
@@ -185,6 +196,7 @@ src/
 │   ├── AngeeLogoFractal.css
 │   └── fractalRenderer.ts   # framework-free animation and drawing engine
 ├── App.tsx             # configurator UI
+├── urlState.ts        # validated query-string parse / serialize
 ├── main.tsx            # demo entry
 └── index.ts            # library entry
 ```
